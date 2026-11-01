@@ -4,7 +4,11 @@
 
 The specification defines required behavior. Your design explains how the implementation produces it. Record decisions that affect boundaries, correctness, significant complexity, or future changes. Avoid documenting every minor naming choice.
 
-Use short architecture decision records (ADRs). Add them under `docs/decisions/` when you make real choices. These documents do not create accepted ADRs on your behalf.
+Use short architecture decision records (ADRs). Add them under `docs/decisions/` when you make real choices. Accepted choices are recorded only after you make them.
+
+## Accepted decisions
+
+- [001 — Keep the project in one repository](decisions/001-single-repository.md). All components initially run on the Mac, with future Raspberry Pi deployment left open. Folder and build organization remain undecided.
 
 ## Decision register
 
@@ -12,7 +16,7 @@ All entries below are **open**. The proposed starting points elsewhere in the sp
 
 | Topic | Resolve by | Questions to consider |
 | --- | --- | --- |
-| Repository and build organization | Phase 0 | What changes together? How can each component build without unrelated dependencies? |
+| Folder and build organization | Phase 0 | How are responsibilities separated inside the chosen single repository? How can each component build without unrelated dependencies? |
 | Toolchain and test approach | Phase 0 | Which supported C++ tools work locally? What does a fresh machine need? |
 | Time and deterministic stepping | Phase 0 | What advances model time? How are steps, releases, host stalls, and reboot discontinuities related? |
 | Plant/sensor/flight ownership | Phase 0 | Who can read truth, publish observations, request effects, and commit mode changes? |
