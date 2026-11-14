@@ -1,6 +1,6 @@
 # 008 — Runner/model boundary and explicit power-model inputs
 
-**Status:** accepted, November 2, 2026. Concrete C++ interfaces and local numerical/error-handling details remain the developer's choices.
+**Status:** accepted, November 2, 2026. The supplied interval uses `std::chrono::duration<double>` as specified below. Other concrete interfaces and local numerical/error-handling details remain the developer's choices.
 
 ## Context
 
@@ -22,7 +22,7 @@ Each calculation receives the starting physical state, the simulation interval t
 
 The model calculates physical evolution rather than measuring how long its own calculation took. It does not read the host clock to derive the interval, sleep to maintain 1x pacing, open sockets, or perform file output. Timing measurements and pacing belong to the runner. Information useful for logging can be returned for the runner to handle.
 
-The exact interface may use an elapsed duration or an explicit interval representation. If absolute simulation timestamps are needed, they are explicit inputs or runner-assigned metadata rather than readings from a hidden real-time clock. Preserve the units selected in decision 007: seconds, watts, and watt-hours.
+Supply the elapsed simulation duration using the type selected in decision 7 below. If absolute simulation timestamps are also needed, they are explicit inputs or runner-assigned metadata rather than readings from a hidden real-time clock. Preserve the units selected in decision 007: seconds, watts, and watt-hours.
 
 ### 3. Initialize the model with constant configuration
 
@@ -54,6 +54,14 @@ Initially a healthy sensor may report a physical value exactly. Later missing, i
 
 The sensor boundary is a logical responsibility inside simulation, not a requirement for another process or thread. Detailed sensor APIs and fault behavior remain separate implementation work.
 
+### 7. Represent the supplied interval as a fractional-second duration
+
+Use `std::chrono::duration<double>` for the interval supplied to the physical model. Its default tick period is one second and its floating-point representation preserves fractional seconds, subject to numerical precision. An interval expressed as 10 milliseconds therefore converts to approximately 0.010 seconds rather than being truncated to zero whole seconds.
+
+The runner supplies this duration; creating or passing it does not read a clock or cause a wait. Interpret its numeric count as seconds for the power model's existing W/Wh formulas. When starting with another chrono duration unit, convert to the selected representation before treating a count as seconds.
+
+A descriptive alias such as `SimulationInterval` may name this type. The alias's namespace and header location remain to be selected. An alias does not introduce a distinct clock domain or prevent real-time durations from being passed accidentally. Input validation remains necessary: the duration type alone does not enforce a positive finite interval or decide zero-duration behavior.
+
 ## Alternatives and consequences
 
 A model that reads a clock itself could be convenient for a standalone prototype, but would couple numerical expectations to execution timing or require a controllable clock dependency. Explicit intervals and inputs allow deterministic model checks without starting the real-time runner.
@@ -70,11 +78,13 @@ Use the independent energy-balance and boundary checks in decision 007. Verify t
 
 A model-only check may represent a long simulation interval without waiting that duration in real time. That tests physical accounting; it is not evidence that the interactive simulator maintains 1x pacing.
 
+Check conversion from milliseconds to the selected fractional-second duration and verify that short intervals remain nonzero. Use the resulting seconds consistently with the Wh energy-accounting formulas.
+
 The developer will implement the model. This record adds no source code, build configuration, or tests.
 
 ## Local details to settle during initial implementation
 
-- Concrete configuration, physical-state, changing-input, interval, and result/report representations.
+- Concrete configuration, physical-state, changing-input, and result/report representations; the interval type is accepted. Its alias name, namespace, and header placement remain open.
 - Numerical type, tolerances, and handling of invalid or non-finite values.
 - Whether a zero-length interval is a valid no-op or an error; negative intervals must not represent ordinary forward evolution.
 - The assumption about input constancy during an update and treatment of input-change boundaries.
